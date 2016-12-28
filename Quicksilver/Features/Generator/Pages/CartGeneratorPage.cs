@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 namespace EPiServer.Reference.Commerce.Site.Features.Start.Pages
 {
     [ContentType(DisplayName = "Generator page", GUID = "43000bdf-731c-47d2-ae46-001df01dd678", Description = "", AvailableInEditMode = true)]
-    public class GeneratorPage : PageData
+    public class CartGeneratorPage : PageData
     {
         [CultureSpecific]
         [Display(

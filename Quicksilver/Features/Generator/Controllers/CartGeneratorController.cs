@@ -1,6 +1,9 @@
-﻿using EPiServer.Commerce.Order;
+﻿using EPiServer.Commerce.Marketing;
+using EPiServer.Commerce.Order;
 using EPiServer.Reference.Commerce.Site.Features.Start.Pages;
+using EPiServer.ServiceLocation;
 using EPiServer.Web.Mvc;
+using Mediachase.Commerce;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,68 +11,11 @@ using System.Web.Mvc;
 
 namespace EPiServer.Reference.Commerce.Site.Features.Start.Controllers
 {
-    public class GeneratorController : PageController<GeneratorPage>
+    public class CartGeneratorController : PageController<CartGeneratorPage>
     {
-        private IOrderRepository _orderRepository;        
-        const string _defaultName = "Default";
-
-        public GeneratorController(IOrderRepository orderRepository)
-        {
-            _orderRepository = orderRepository;
-        }
-
-        public ViewResult Index()
-        { 
-
-            return View();
-        }
-
-        [HttpPost]
-        public ViewResult Index(FormCollection collection)
-        {
-            var numberOfCart = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
-            var numberOfShipment = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
-            var numberOfItem = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
-
-            CreateCart(numberOfCart, numberOfShipment, numberOfItem);
-            ViewBag.Message = $"{numberOfCart} carts were created!";
-            return View();
-        }
-
-        private void CreateCart(int numberOfCart, int numberOfShipment, int numberOfItem)
-        {
-            for (var k = 1; k <= numberOfCart; k++)
-            {
-                var cart = _orderRepository.LoadOrCreateCart<ICart>(Guid.NewGuid(), _defaultName);
-
-                for (var j = 1; j <= numberOfShipment; j++)
-                {
-                    var shipment = cart.GetFirstShipment();
-                    if (j > 1)
-                    {
-                        shipment = cart.CreateShipment();
-                        cart.AddShipment(shipment);
-                    }                
-
-                    for (var i = 1; i <= numberOfItem; i++)
-                    {
-                        // Adding random entry to cart
-                        var entryCode = _listOfEntryCodes.OrderBy(s => Guid.NewGuid()).First();
-                        do
-                        {
-                            entryCode = _listOfEntryCodes.OrderBy(s => Guid.NewGuid()).First();
-                        } while (cart.GetAllLineItems().Any(l => l.Code == entryCode));
-
-                        var lineItem = cart.CreateLineItem(entryCode);
-                        lineItem.Quantity = 1;
-                        lineItem.PlacedPrice = 100;
-                        shipment.LineItems.Add(lineItem);
-                    }
-                }
-
-                var _cartLink = _orderRepository.Save(cart);
-            }
-        }
+        private readonly IOrderRepository _orderRepository;
+        
+        static string _defaultName = "Default";
 
         #region ListOfEntryCodes
         private List<string> _listOfEntryCodes = new List<string> { "SKU-40797394",
@@ -737,5 +683,64 @@ namespace EPiServer.Reference.Commerce.Site.Features.Start.Controllers
 "SKU-24064194", };
         #endregion
 
+        public CartGeneratorController(
+            IOrderRepository orderRepository)
+        {
+            _orderRepository = orderRepository;
+        }
+
+        public ViewResult Index(CartGeneratorPage currentPage)
+        { 
+
+            return View(currentPage);
+        }
+        
+
+        [HttpPost]
+        public ViewResult Index(FormCollection collection)
+        {
+            var numberOfCart = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
+            var numberOfShipment = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
+            var numberOfItem = string.IsNullOrEmpty(collection["numberOfCart"]) ? 1 : int.Parse(collection["numberOfCart"]);
+
+            CreateCart(numberOfCart, numberOfShipment, numberOfItem);
+            ViewBag.Message = $"{numberOfCart} carts were created!";
+            return View();
+        }
+
+        private void CreateCart(int numberOfCart, int numberOfShipment, int numberOfItem)
+        {
+            for (var k = 1; k <= numberOfCart; k++)
+            {
+                var cart = _orderRepository.LoadOrCreateCart<ICart>(Guid.NewGuid(), _defaultName);
+
+                for (var j = 1; j <= numberOfShipment; j++)
+                {
+                    var shipment = cart.GetFirstShipment();
+                    if (j > 1)
+                    {
+                        shipment = cart.CreateShipment();
+                        cart.AddShipment(shipment);
+                    }                
+
+                    for (var i = 1; i <= numberOfItem; i++)
+                    {
+                        // Adding random entry to cart
+                        var entryCode = _listOfEntryCodes.OrderBy(s => Guid.NewGuid()).First();
+                        do
+                        {
+                            entryCode = _listOfEntryCodes.OrderBy(s => Guid.NewGuid()).First();
+                        } while (cart.GetAllLineItems().Any(l => l.Code == entryCode));
+
+                        var lineItem = cart.CreateLineItem(entryCode);
+                        lineItem.Quantity = 1;
+                        lineItem.PlacedPrice = 100;
+                        shipment.LineItems.Add(lineItem);
+                    }
+                }
+
+                var _cartLink = _orderRepository.Save(cart);
+            }
+        }
     }
 }
